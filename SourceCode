@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LENDSCOREAFRICA – Loan Qualification App by Hephzber Obiorah</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa7b2; --accent:#00c2a8; --glass:rgba(255,255,255,0.03);
+      --text:#ecf0f3; --danger:#ff6b6b; --approved:#2dd4bf;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#071024 0%, #071826 100%);color:var(--text);min-height:100vh}
+    .wrap{max-width:1100px;margin:28px auto;padding:20px}
+    header{display:flex;gap:18px;align-items:center;margin-bottom:18px}
+    .logo{width:68px;height:68px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#1e90ff);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#022;box-shadow:0 6px 18px rgba(2,2,2,0.5)}
+    h1{margin:0;font-size:20px}
+    .lead{margin:3px 0 0;color:var(--muted);font-size:13px}
+    .card-grid{display:grid;grid-template-columns:1fr 320px;gap:18px}
+    .survey-card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+    .progress{height:8px;background:var(--glass);border-radius:8px;overflow:hidden}
+    .progress i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#6ee7b7);width:0}
+    .question-card{margin-top:14px}
+    .q-header{display:flex;justify-content:space-between;align-items:center}
+    .q-title{font-weight:700}
+    .q-desc{color:var(--muted);font-size:13px}
+    .badge{background:rgba(255,255,255,0.04);padding:6px 8px;border-radius:8px;font-weight:700}
+    .options{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .opt{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;border:1px solid transparent}
+    .opt:hover{transform:translateY(-2px);transition:all .12s}
+    .opt.selected{border-color:rgba(255,255,255,0.08);box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    .label{font-weight:600}
+    .sub{font-size:13px;color:var(--muted)}
+    .nav{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+    button.btn{background:var(--accent);border:0;padding:10px 14px;border-radius:10px;color:#022;font-weight:700;cursor:pointer}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 10px;border-radius:8px;color:var(--text);cursor:pointer}
+    .sidebar{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.015));padding:18px;border-radius:12px}
+    .summary{display:flex;flex-direction:column;gap:12px}
+    .score-big{font-size:44px;font-weight:800}
+    .breakdown{background:rgba(255,255,255,0.02);padding:10px;border-radius:10px}
+    .row{display:flex;justify-content:space-between;padding:8px 6px;border-bottom:1px dashed rgba(255,255,255,0.02)}
+    .result{padding:10px;border-radius:8px;font-weight:700}
+    .result.approved{background:rgba(45,212,191,0.08);color:var(--approved)}
+    .result.declined{background:rgba(255,107,107,0.06);color:var(--danger)}
+    footer{margin-top:12px;color:var(--muted);font-size:12px}
+    @media(max-width:900px){.card-grid{grid-template-columns:1fr}.sidebar{order:2}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">MS</div>
+      <div>
+        <h1>LENDSCORE AFRICA – Loan Qualification App by Hephzber Obiorah</h1>
+        <p class="lead">Answer the short cards below. The app scores each section and gives an eligibility result.</p>
+      </div>
+    </header>
+
+    <div class="card-grid">
+      <div class="survey-card">
+        <div class="progress" aria-hidden><i id="progbar" style="width:0%"></i></div>
+        <div id="cardHolder" style="margin-top:18px"></div>
+        <div class="nav">
+          <button class="ghost" id="prevBtn">← Previous</button>
+          <div style="display:flex;gap:8px">
+            <button class="ghost" id="saveBtn">Save progress</button>
+            <button class="btn" id="nextBtn">Next →</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="summary">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div class="score-big" id="totalScore">0</div>
+              <div style="color:var(--muted);font-size:13px">Total score (out of 100)</div>
+            </div>
+            <div class="badge">MSME Scorecard</div>
+          </div>
+
+          <div class="breakdown" id="breakdown">
+            <!-- rows populated dynamically -->
+          </div>
+
+          <div id="eligibility" style="margin-top:12px"></div>
+
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="ghost" id="downloadCSV">Download CSV</button>
+            <button class="ghost" id="downloadJSON">Download JSON</button>
+            <button class="ghost" id="printBtn">Print / Save PDF</button>
+          </div>
+        </div>
+        <footer>Scoring model adapted from uploaded questionnaire.</footer>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // Questions + scoring (based on uploaded doc). Each question has options with scores.
+    const questions = [
+      // Section A: Cash Flow & Activity (1-4)
+      {id:1, section:'Business Fundamentals', title:'Does the business have consistent monthly cash inflows over the past 6 months?', max:8, options:[ {label:'Very consistent (>90% months)',score:8}, {label:'Moderately consistent (70-89%)',score:5}, {label:'Irregular (50-69%)',score:2}, {label:'Highly irregular (<50%)',score:0} ]},
+      {id:2, section:'Business Fundamentals', title:'What is the average monthly transaction volume?', max:5, options:[ {label:'High (>50 transactions/month)',score:5}, {label:'Moderate (20-49)',score:3}, {label:'Low (10-19)',score:1}, {label:'Very low (<10)',score:0} ]},
+      {id:3, section:'Business Fundamentals', title:'Is there evidence of growing or stable revenue trends?', max:4, options:[ {label:'Clear growth trend',score:4}, {label:'Stable',score:2}, {label:'Declining',score:0} ]},
+      {id:4, section:'Business Fundamentals', title:'Are cash flow patterns aligned with the business type/seasonality?', max:3, options:[ {label:'Fully aligned',score:3}, {label:'Partially aligned',score:1.5}, {label:'Misaligned or unexplained gaps',score:0} ]},
+      // Section B: Business Operational Stability (5-8)
+      {id:5, section:'Business Fundamentals', title:'How long has the business been operating?', max:5, options:[ {label:'>3 years',score:5}, {label:'2-3 years',score:3}, {label:'1-2 years',score:1}, {label:'<1 year',score:0} ]},
+      {id:6, section:'Business Fundamentals', title:'Is the business formally registered (CAC/SMEDAN)?', max:4, options:[ {label:'Registered with CAC',score:4}, {label:'SMEDAN registered',score:2}, {label:'Unregistered',score:0} ]},
+      {id:7, section:'Business Fundamentals', title:'Does the business have a verifiable physical location?', max:3, options:[ {label:'Owned/long-term lease with documentation',score:3}, {label:'Short-term lease',score:1.5}, {label:'No fixed location',score:0} ]},
+      {id:8, section:'Business Fundamentals', title:'Is there evidence of consistent utility bill payments?', max:3, options:[ {label:'12+ months consistent payment',score:3}, {label:'6-11 months',score:1.5}, {label:'<6 months or irregular',score:0} ]},
+      // Section C: Loan Purpose & Utility (9-11)
+      {id:9, section:'Business Fundamentals', title:'Is the loan purpose clearly defined and productive?', max:4, options:[ {label:'Specific, productive use with documentation',score:4}, {label:'General business use',score:2}, {label:'Vague or consumptive',score:0} ]},
+      {id:10, section:'Business Fundamentals', title:'Are there verifiable supplier/vendor invoices provided?', max:3, options:[ {label:'Complete documentation',score:3}, {label:'Partial documentation',score:1.5}, {label:'No documentation',score:0} ]},
+      {id:11, section:'Business Fundamentals', title:'Is the repayment plan realistic and tied to revenue cycles?', max:3, options:[ {label:'Well-structured with clear revenue linkage',score:3}, {label:'Basic plan',score:1.5}, {label:'Unrealistic or unclear',score:0} ]},
+      // Section D: Management Quality (12-14)
+      {id:12, section:'Entrepreneurial Character', title:"What is the borrower's past credit/loan repayment history?", max:7, options:[ {label:'Excellent (100% repayment)',score:7}, {label:'Good (1-2 minor delays)',score:5}, {label:'Fair (multiple delays)',score:2}, {label:'Poor/defaults',score:0} ]},
+      {id:13, section:'Entrepreneurial Character', title:'What is the psychometric assessment score?', max:5, options:[ {label:'High conscientiousness & integrity',score:5}, {label:'Moderate',score:3}, {label:'Low',score:1}, {label:'Red flags identified',score:0} ]},
+      {id:14, section:'Entrepreneurial Character', title:'Does the borrower demonstrate business knowledge and planning capability?', max:3, options:[ {label:'Strong business acumen',score:3}, {label:'Basic understanding',score:1.5}, {label:'Weak/no understanding',score:0} ]},
+      // Section E: Financial Discipline (15-17)
+      {id:15, section:'Entrepreneurial Character', title:"What is the borrower's personal savings ratio?", max:4, options:[ {label:'>15% of income',score:4}, {label:'5-15%',score:2}, {label:'<5% or negative',score:0} ]},
+      {id:16, section:'Entrepreneurial Character', title:'Does the borrower have a history of managing personal debts responsibly?', max:3, options:[ {label:'No personal debt or excellent management',score:3}, {label:'Minor debts managed well',score:1.5}, {label:'Poor debt management',score:0} ]},
+      {id:17, section:'Entrepreneurial Character', title:'Is there consistent airtime/bill payment behavior (telco data)?', max:3, options:[ {label:'Very consistent',score:3}, {label:'Moderately consistent',score:1.5}, {label:'Irregular',score:0} ]},
+      // Section F: Innovation & Reach (18-20)
+      {id:18, section:'Entrepreneurial Character', title:'Does the business have an active digital presence?', max:4, options:[ {label:'Professional website/e-commerce + social media',score:4}, {label:'Basic social media presence',score:2}, {label:'No digital presence',score:0} ]},
+      {id:19, section:'Entrepreneurial Character', title:"What is the borrower's education level and business training?", max:3, options:[ {label:'Tertiary education + business training',score:3}, {label:'Secondary education/NYSC',score:1.5}, {label:'No formal education',score:0} ]},
+      {id:20, section:'Entrepreneurial Character', title:'Are there positive customer reviews/ratings?', max:3, options:[ {label:'Strong positive reviews (4.0+ stars)',score:3}, {label:'Moderate reviews',score:1.5}, {label:'Negative or no reviews',score:0} ]},
+      // Section G: Collateral Security (21-22)
+      {id:21, section:'Ecosystem Support', title:'Does the borrower have fixed assets (land, buildings) with title deeds?', max:5, options:[ {label:'Full title deed ownership',score:5}, {label:'Partial/shared ownership',score:3}, {label:'No fixed assets',score:0} ]},
+      {id:22, section:'Ecosystem Support', title:'Are there movable assets registered or quality guarantors available?', max:5, options:[ {label:'Registered movable assets + strong guarantor',score:5}, {label:'Either movable assets OR guarantor',score:3}, {label:'Neither',score:0} ]},
+      // Section H: Systemic Risk (23-24)
+      {id:23, section:'Ecosystem Support', title:'What is the industry/sector risk rating for the business?', max:3, options:[ {label:'Low-risk sector',score:3}, {label:'Moderate-risk',score:1.5}, {label:'High-risk/volatile sector',score:0} ]},
+      {id:24, section:'Ecosystem Support', title:'Is the business exposed to forex/macroeconomic shocks?', max:2, options:[ {label:'Low exposure',score:2}, {label:'Moderate exposure',score:1}, {label:'High exposure',score:0} ]},
+      // Section I: Support Structure (25-26)
+      {id:25, section:'Ecosystem Support', title:'Has the borrower engaged with business advisory/mentorship programs?', max:3, options:[ {label:'Active engagement with proven advisors',score:3}, {label:'Some engagement',score:1.5}, {label:'No engagement',score:0} ]},
+      {id:26, section:'Ecosystem Support', title:"Has the borrower completed the bank's non-financial services training?", max:2, options:[ {label:'Completed all relevant training',score:2}, {label:'Partial completion',score:1}, {label:'No participation',score:0} ]},
+    ];
+
+    // state
+    const state = { answers: {}, index:0 };
+    const STORAGE_KEY = 'msme_answers_v2';
+
+    const cardHolder = document.getElementById('cardHolder');
+    const prog = document.getElementById('progbar');
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const saveBtn = document.getElementById('saveBtn');
+
+    function renderQuestion(i){
+      const q = questions[i];
+      const container = document.createElement('div');
+      container.className = 'question-card';
+
+      container.innerHTML = `
+        <div>
+          <div class="q-header">
+            <div>
+              <div class="q-title">Q${q.id}. ${q.title}</div>
+              <div class="q-desc">Section: ${q.section} — Max ${q.max} pts</div>
+            </div>
+            <div class="badge">${i+1} / ${questions.length}</div>
+          </div>
+
+          <div class="options" id="opts"></div>
+        </div>
+        <div style="color:var(--muted);font-size:13px;margin-top:10px">Select the option that best matches the MSME's answer.</div>
+      `;
+
+      cardHolder.innerHTML = '';
+      cardHolder.appendChild(container);
+      const opts = container.querySelector('#opts');
+
+      q.options.forEach((op, idx)=>{
+        const b = document.createElement('div');
+        b.className = 'opt';
+        b.dataset.score = op.score;
+        b.dataset.optIndex = idx;
+        b.innerHTML = `
+          <div style="display:flex;flex-direction:column">
+            <div class="label">${op.label}</div>
+          </div>
+          <div class="sub">${op.score} pts</div>
+        `;
+
+        // restore selection if previously answered
+        if(String(state.answers[q.id]) === String(op.score)) b.classList.add('selected');
+
+        b.addEventListener('click', ()=>{
+          // record answer
+          state.answers[q.id] = op.score;
+          // mark selected
+          opts.querySelectorAll('.opt').forEach(x=>x.classList.remove('selected'));
+          b.classList.add('selected');
+          // update sidebar and progress
+          updateSidebar();
+        });
+
+        opts.appendChild(b);
+      });
+
+      updateProgress();
+      // handle prev/next visibility
+      prevBtn.disabled = (i===0);
+      nextBtn.innerText = (i === questions.length-1) ? 'Finish' : 'Next →';
+    }
+
+    function updateProgress(){
+      // progress by index position
+      const pct = Math.round((state.index / (questions.length-1)) * 100);
+      prog.style.width = pct + '%';
+    }
+
+    nextBtn.addEventListener('click', ()=>{
+      // simple guard: if current question unanswered, confirm move on (but allow)
+      const currentQ = questions[state.index];
+      if(state.index < questions.length-1){
+        state.index++;
+        renderQuestion(state.index);
+      } else {
+        showResult();
+      }
+    });
+
+    prevBtn.addEventListener('click', ()=>{
+      if(state.index > 0){
+        state.index--;
+        renderQuestion(state.index);
+      }
+    });
+
+    saveBtn.addEventListener('click', ()=>{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      alert('Progress saved locally in your browser.');
+    });
+
+    // load saved
+    (function(){
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if(saved){
+        try{
+          const s = JSON.parse(saved);
+          if(s && s.answers){
+            // merge but preserve expected structure
+            state.answers = s.answers || {};
+            state.index = (typeof s.index === 'number') ? s.index : 0;
+            if(state.index < 0 || state.index >= questions.length) state.index = 0;
+          }
+        }catch(e){console.warn('Could not parse saved state', e)}
+      }
+      renderQuestion(state.index);
+      updateSidebar();
+    })();
+
+    function computeScores(){
+      const sections = {};
+      let total = 0;
+      questions.forEach(q=>{
+        const sc = Number(state.answers[q.id] || 0);
+        if(!sections[q.section]){ sections[q.section]={score:0,max:0}; }
+        sections[q.section].score += sc;
+        sections[q.section].max += q.max;
+        total += sc;
+      });
+      // normalize total to 100 scale if sum of max != 100
+      const maxTotal = questions.reduce((s,q)=>s+q.max,0);
+      const normalized = Math.round((total / maxTotal) * 100 * 10) / 10; // one decimal
+      return {sections,total,normalized,maxTotal};
+    }
+
+    function updateSidebar(){
+      const out = computeScores();
+      document.getElementById('totalScore').innerText = out.normalized;
+      const breakdown = document.getElementById('breakdown');
+      breakdown.innerHTML = '';
+      for(const key in out.sections){
+        const row = document.createElement('div');
+        row.className='row';
+        row.innerHTML = `<div style="font-weight:700">${key}</div><div>${out.sections[key].score} / ${out.sections[key].max}</div>`;
+        breakdown.appendChild(row);
+      }
+      const elig = document.getElementById('eligibility');
+      elig.innerHTML = '';
+      const totalPercent = out.normalized;
+      const node = document.createElement('div');
+      node.className='result';
+      if(totalPercent >= 70){ node.classList.add('approved'); node.innerText = 'Result: APPROVED — strong eligibility.'; }
+      else if(totalPercent >=50){ node.classList.add('approved'); node.innerText = 'Result: CONDITIONAL — requires additional mitigation (Guarantor, Additional Capacity Building).'; }
+      else{ node.classList.add('declined'); node.innerText = 'Result: DECLINED — low eligibility. Capacity building and Additional Training are Recommended.'; }
+      elig.appendChild(node);
+    }
+
+    function showResult(){
+      updateSidebar();
+      alert('Survey complete. See score on the right. You can print or download results.');
+    }
+
+    // Export functions
+    document.getElementById('downloadJSON').addEventListener('click', ()=>{
+      const payload = {answers: state.answers, computed: computeScores(), date: new Date().toISOString()};
+      const blob = new Blob([JSON.stringify(payload, null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url; a.download='msme_score.json'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('downloadCSV').addEventListener('click', ()=>{
+      const rows = [['Question','Section','Answer Score','Max Score']];
+      questions.forEach(q=>{
+        rows.push([q.title, q.section, state.answers[q.id]===undefined? '': state.answers[q.id], q.max]);
+      });
+      const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url; a.download='msme_score.csv'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('printBtn').addEventListener('click', ()=>{ window.print(); });
+
+    // keyboard navigation (optional)
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'ArrowRight') nextBtn.click();
+      if(e.key === 'ArrowLeft') prevBtn.click();
+    });
+
+  </script>
+</body>
+</html>
+
